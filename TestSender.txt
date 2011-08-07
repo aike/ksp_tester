@@ -1,0 +1,226 @@
+{
+  Copyright (C) 2011 Soundfrost Music. All rights reserved.
+  http://soundfrostmusic.com/
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in
+       the documentation and/or other materials provided with the
+       distribution.
+
+  THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS   AS IS''
+  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+  THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+  PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS
+  BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+  BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+  OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+  IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+}
+
+{ Internal utility functions }
+function TestSendCommand(cmd)
+	set_midi($TestChannel, $MIDI_COMMAND_CC, $TEST_COMMAND_CC, cmd)
+end function
+
+function TestSendParameter(prm)
+	set_midi($TestChannel, $MIDI_COMMAND_CC, $TEST_PARAMETER_CC, prm)
+end function
+
+function TestSplitValue(value)
+	$TestByte1 := (value) .and. 127
+	$TestByte2 := sh_right(value, 7) .and. 127
+	$TestByte3 := sh_right(value, 14) .and. 127
+end function
+
+
+{ Initialize macro called in ICB }
+macro TestSetup(#channel#)
+    import "TestCommon.txt"
+
+    declare $TestChannel := #channel#
+	declare $TestByte1
+	declare $TestByte2
+	declare $TestByte3
+end macro
+
+function TestSetChannel(ch)
+    $TestChannel := ch
+end function
+
+
+{ Test Statements }
+macro TestStart()
+	TestSendCommand($TEST_START)
+	TestSendParameter(0)
+	TestWait(500)
+end macro
+
+function TestEnd()
+	TestSendCommand($TEST_END)
+	TestSendParameter(0)
+	TestWait(10)
+end function
+
+function Test(section_no)
+	TestSendCommand($TEST_NO)
+	TestSendParameter(1)
+	TestSendParameter(section_no)
+	TestWait(10)
+end function
+
+function TestWait(milli_second)
+	wait(milli_second * 1000)
+end function
+
+
+{ Target Library Control Commands }
+function TestNoteOn(note, velocity, wait_millisec)
+	set_midi($TestChannel, $MIDI_COMMAND_NOTE_ON, note, velocity)
+	wait(wait_millisec * 1000)
+end function
+
+function TestNoteOff(note)
+	set_midi($TestChannel, $MIDI_COMMAND_NOTE_OFF, note, 1)
+	TestWait(10)
+end function
+
+function TestCC(byte1, byte2)
+	set_midi($TestChannel, $MIDI_COMMAND_CC, byte1, byte2)
+	TestWait(10)
+end function
+
+
+
+{ Test Assertion Commands }
+function AssertNote(note_no, matcher, value)
+	TestSendCommand($TEST_ASSERT_NOTE)
+	TestSendParameter(3)
+	TestSendParameter(note_no)
+	TestSendParameter(matcher)
+	TestSendParameter(value)
+	TestWait(10)
+end function
+
+function AssertNoteOn(note_no)
+    AssertNote(note_no, $EqualTo, 1)
+end function
+
+function AssertNoteOff(note_no)
+    AssertNote(note_no, $EqualTo, 0)
+end function
+
+function AssertVelocity(note_no, matcher, value)
+	TestSendCommand($TEST_ASSERT_VELOCITY)
+	TestSendParameter(3)
+	TestSendParameter(note_no)
+	TestSendParameter(matcher)
+	TestSendParameter(value)
+	TestWait(10)
+end function
+
+function AssertVelocityInRange(note_no, minvalue, maxvalue)
+    AssertVelocity(note_no, $GreaterThanOrEqualTo, minvalue)
+    AssertVelocity(note_no, $LessThanOrEqualTo, maxvalue)
+end function
+
+function AssertGroup(group_no, matcher, value)
+    declare gno
+    gno := group_no
+    if (gno = $ALL_GROUPS)
+        gno := $TEST_ALL_GROUPS
+    end if
+	TestSendCommand($TEST_ASSERT_GROUP)
+	TestSendParameter(4)
+	TestSplitValue(gno)
+	TestSendParameter($TestByte1)
+	TestSendParameter($TestByte2)
+	TestSendParameter(matcher)
+	TestSendParameter(value)
+	TestWait(10)
+end function
+
+function AssertGroupOn(group_no)
+    AssertGroup(group_no, $EqualTo, 1)
+end function
+
+function AssertGroupOff(group_no)
+    AssertGroup(group_no, $EqualTo, 0)
+end function
+
+function TestGroupCounterReset
+	TestSendCommand($TEST_GROUP_COUNTER_RESET)
+	TestSendParameter(0)
+	TestWait(10)
+end function
+
+function AssertGroupCounter(group_no, matcher, value)
+    declare gno
+    gno := group_no
+    if (gno = $ALL_GROUPS)
+        gno := $TEST_ALL_GROUPS
+    end if
+	TestSendCommand($TEST_ASSERT_GROUP_COUNTER)
+	TestSendParameter(6)
+	TestSplitValue(gno)
+	TestSendParameter($TestByte1)
+	TestSendParameter($TestByte2)
+	TestSendParameter(matcher)
+	TestSplitValue(value)
+	TestSendParameter($TestByte1)
+	TestSendParameter($TestByte2)
+	TestSendParameter($TestByte3)
+	TestWait(10)
+end function
+
+function AssertEnginePar(engine_par, group, slot, generic, matcher, value)
+	TestSendCommand($TEST_ASSERT_ENGINE_PAR)
+	TestSendParameter(9)
+	TestSplitValue(engine_par)
+	TestSendParameter($TestByte1)
+	TestSendParameter($TestByte2)
+	TestSendParameter(group + 1)
+	TestSendParameter(slot + 1)
+	TestSendParameter(generic + 1)
+	TestSendParameter(matcher)
+	TestSplitValue(value)
+	TestSendParameter($TestByte1)
+	TestSendParameter($TestByte2)
+	TestSendParameter($TestByte3)
+	TestWait(10)
+end function
+
+function AssertEngineParInRange(engine_par, group, slot, generic, minvalue, maxvalue)
+    AssertEnginePar(engine_par, group, slot, generic, $GreaterThanOrEqualTo, minvalue)
+    AssertEnginePar(engine_par, group, slot, generic, $LessThanOrEqualTo, maxvalue)
+end function
+
+function AssertPgs(index, matcher, value)
+	TestSendCommand($TEST_ASSERT_PGS)
+	TestSendParameter(7)
+	TestSplitValue(index)
+	TestSendParameter($TestByte1)
+	TestSendParameter($TestByte2)
+	TestSendParameter($TestByte3)
+	TestSendParameter(matcher)
+	TestSplitValue(value)
+	TestSendParameter($TestByte1)
+	TestSendParameter($TestByte2)
+	TestSendParameter($TestByte3)
+	TestWait(10)
+end function
+
+function AssertPgsInRange(index, minvalue, maxvalue)
+    AssertPgs(index, $GreaterThanOrEqualTo, minvalue)
+    AssertPgs(index, $LessThanOrEqualTo, maxvalue)
+end function
+
+

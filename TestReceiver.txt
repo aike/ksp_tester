@@ -1,0 +1,336 @@
+{
+  Copyright (C) 2011 Soundfrost Music. All rights reserved.
+  http://soundfrostmusic.com/
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions
+  are met:
+
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in
+       the documentation and/or other materials provided with the
+       distribution.
+
+  THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS   AS IS''
+  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+  THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+  PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS
+  BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+  BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+  OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+  IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+}
+
+macro PutText(#lbl#, #xpos#, #ypos#, #font_no#, #text#) 
+	declare ui_label #lbl#(1, 1)
+	set_text(#lbl#, #text#)
+	hide_part(#lbl#, $HIDE_PART_BG)
+	set_control_par(get_ui_id(#lbl#), $CONTROL_PAR_WIDTH, 200)
+	set_control_par(get_ui_id(#lbl#), $CONTROL_PAR_FONT_TYPE, #font_no#)
+	move_control_px(#lbl#, #xpos#, #ypos#)    
+end macro
+
+macro Button(#btn#, #xpos#, #ypos#, #text#)
+    declare ui_button #btn#
+    set_text(#btn#, #text#)
+	move_control_px(#btn#, #xpos#, #ypos#)
+	set_control_par(get_ui_id(#btn#), $CONTROL_PAR_WIDTH, 80)
+    set_control_par(get_ui_id(#btn#), $CONTROL_PAR_TEXT_ALIGNMENT, 1)
+end macro
+
+on init
+    import "TestCommon.txt"
+    
+	set_ui_height_px(270)
+	set_script_title("TestReceiver")
+    set_skin_offset(5000)
+	make_perfview
+
+	declare $TestCtrlNote := 40
+	declare $command
+	declare $ok
+	declare $ng
+	declare @s
+    declare $n
+    declare polyphonic $pn
+	declare %velocity[128]
+	declare %value[20]
+	declare $value_cnt
+	declare $value_max
+    declare %group_stat[500]
+    declare %group_counter[500]
+    declare $all_group_stat
+    declare $all_group_counter
+    declare $v2
+    declare $v3
+    declare $time
+    declare $start_time
+
+    { Test Console }
+	declare ui_label $console (1, 2)
+	set_control_par(get_ui_id($console), $CONTROL_PAR_WIDTH, 400)
+	set_control_par(get_ui_id($console), $CONTROL_PAR_HEIGHT, 245)
+	set_text($console, "")
+	move_control_px($console, 15, 10)
+    
+    { Button }
+    Button($verbose_mode, 425, 212, "Verbose Mode")
+    Button($clear_button, 425, 237, "Clear")
+
+    { Logo }
+    PutText($text1, 450,  70, 17, "Soundfrost KSP Tester")
+    PutText($text2, 460,  90, 3,  "Version " & @TEST_FRAMEWORK_VERSION)
+    PutText($text3, 460, 107, 3,  "soundfrostmusic.com")
+    
+    { Status Bar }
+    declare ui_table %status_bar[2] (1,1,1)
+	set_table_steps_shown(%status_bar, 1)
+	%status_bar[0] := 1
+	move_control_px(%status_bar, 425, 10)
+	set_control_par(get_ui_id(%status_bar), $CONTROL_PAR_WIDTH, 200)
+	set_control_par(get_ui_id(%status_bar), $CONTROL_PAR_HEIGHT, 20)
+    set_control_par(get_ui_id(%status_bar),$CONTROL_PAR_BAR_COLOR, 256)
+    ResetBar
+    
+    pgs_create_key(TEST_PGS_KEY, 100)
+    
+    message("")
+end on
+
+function Print(s1, s2)
+	add_text_line($console, s1 & s2)
+end function
+
+function VPrint(s1, s2)
+    if ($verbose_mode = 1)
+        add_text_line($console, s1 & s2)
+    end if
+end function
+
+function Clear
+	set_text($console, "")
+end function
+
+function ResetBar
+    set_control_par(get_ui_id(%status_bar),$CONTROL_PAR_BAR_COLOR, 0x888888) 
+end function
+
+function OkBar
+    set_control_par(get_ui_id(%status_bar),$CONTROL_PAR_BAR_COLOR, 0x00DD66) 
+end function
+
+function NgBar
+    set_control_par(get_ui_id(%status_bar),$CONTROL_PAR_BAR_COLOR, 0xFF3333) 
+end function
+
+function MergeBytes2(b1, b2)
+    $v2 := b1 .or. sh_left(b2, 7)
+end function
+
+function MergeBytes3(b1, b2, b3)
+    $v3 := b1 .or. sh_left(b2, 7) .or. sh_left(b3, 14)
+end function
+
+function ResetGroupCounter
+    $n := 0
+    while ($n < $NUM_GROUPS)
+        %group_counter[$n] := 0
+        inc($n)
+    end while
+    $all_group_counter := 0
+end function
+
+function DoAssertion(got, matcher, expected)
+    declare flag
+    flag := 0
+    @s := ""
+    select (matcher)
+		case $EqualTo
+            if (got = expected)
+                flag := 1
+            else
+                @s := "  NG '='."
+            end if
+		case $NotEqualTo
+            if (got # expected)
+                flag := 1
+            else
+                @s := "  NG '#'."
+            end if
+		case $LessThan
+            if (got < expected)
+                flag := 1
+            else
+                @s := "  NG '<'."
+            end if
+		case $GreaterThan
+            if (got > expected)
+                flag := 1
+            else
+                @s := "  NG '>'."
+            end if
+		case $LessThanOrEqualTo
+            if (got <= expected)
+                flag := 1
+            else
+                @s := "  NG '<='."
+            end if
+		case $GreaterThanOrEqualTo
+            if (got >= expected)
+                flag := 1
+            else
+                @s := "  NG '>='."
+            end if
+    end select
+    if (flag = 1)
+        inc($ok)
+    else
+        @s := @s & "  Expected is: " & expected & "  got: " & got
+        Print(@s, "")
+        inc($ng)
+    end if
+end function
+
+
+
+function do_command
+	select ($command)
+		case $TEST_START
+            $start_time := $ENGINE_UPTIME
+			Clear
+            ResetBar
+			$ok := 0
+			$ng := 0
+            ResetGroupCounter
+            wait(200000)
+			Print("Soundfrost KSP Tester version ", @TEST_FRAMEWORK_VERSION)
+
+		case $TEST_END
+            $time := $ENGINE_UPTIME - $start_time
+            Print("Time: ", ($time / 1000) & "." & ($time - ($time / 1000 * 1000)))
+            Print("", "")
+            
+			if ($ng = 0)
+				@s :=  "(" & $ok & " tests)"
+				Print("OK ", @s)
+                OkBar
+			else
+				Print("FAILURES!!!", "")
+				@s := "run: " & ($ok + $ng) & ",  Failures: " & $ng
+				Print("Tests ", @s)
+                NgBar
+			end if
+            Print("", "")
+            Print("", "")
+
+		case $TEST_NO
+			Print("Test ", %value[0])
+
+		case $TEST_ASSERT_NOTE
+            VPrint("  Assert Note (", %value[0] & ", " & %value[1] & ", " & %value[2] & ")")
+            DoAssertion(%KEY_DOWN[%value[0]], %value[1], %value[2])
+
+		case $TEST_ASSERT_VELOCITY
+            VPrint("  Assert Velocity (", %value[0] & ", " & %value[1] & ", " & %value[2] & ")")
+            DoAssertion(%velocity[%value[0]], %value[1], %value[2])
+
+		case $TEST_ASSERT_GROUP
+            MergeBytes2(%value[0], %value[1])
+            VPrint("  Assert Group (", $v2 & ", " & %value[2] & ", " & %value[3] & ")")
+            if (v2 = $TEST_ALL_GROUPS)
+                DoAssertion($all_group_stat, %value[2], %value[3])
+            else
+                DoAssertion(%group_stat[$v2], %value[2], %value[3])
+            end if
+ 
+        case $TEST_ASSERT_GROUP_COUNTER
+            MergeBytes2(%value[0], %value[1])
+            MergeBytes3(%value[3], %value[4], %value[5])
+            VPrint("  Assert Group Counter (", $v2 & ", " & %value[2] & ", " & $v3 & ")")
+            if (v2 = $TEST_ALL_GROUPS)
+                DoAssertion($all_group_counter, %value[2], $v3)
+            else
+                DoAssertion(%group_counter[$v2], %value[2], $v3)
+            end if
+
+        case $TEST_GROUP_COUNTER_RESET
+            VPrint("  Group Counter Reset", "")
+            ResetGroupCounter
+
+		case $TEST_ASSERT_ENGINE_PAR
+            MergeBytes2(%value[0], %value[1])
+            MergeBytes3(%value[6], %value[7], %value[8])
+            VPrint("  Assert Engine Par (", $v2 & ", " & %value[2]-1 & ", " & %value[3]-1 & ", " & %value[4]-1 & ", " & %value[5] & ", " & $v3 & ")")
+            DoAssertion(get_engine_par($v2, %value[2]-1, %value[3]-1, %value[4]-1), %value[5], $v3)
+
+        case $TEST_ASSERT_PGS
+            MergeBytes3(%value[0], %value[1], %value[2])
+            $v2 := $v3
+            MergeBytes3(%value[4], %value[5], %value[6])
+            VPrint("  Assert Pgs (", $v2 & ", " & %value[3] & ", " & $v3 & ")")
+            DoAssertion(pgs_get_key_val(TEST_PGS_KEY, $v2), %value[3], $v3)
+
+	end select
+
+end function
+
+on controller
+	if ($CC_NUM = $TEST_COMMAND_CC)
+		$command := %CC[$CC_NUM]
+		$value_cnt := -1
+	end if
+
+	if ($CC_NUM = $TEST_PARAMETER_CC)
+		if ($value_cnt = -1)
+			$value_max := %CC[$CC_NUM]
+			$value_cnt := 0
+		else
+			%value[$value_cnt] := %CC[$CC_NUM]
+			inc($value_cnt)
+		end if
+		if ($value_cnt = $value_max)
+			call do_command
+		end if
+	end if
+end on
+
+on note
+	%velocity[$EVENT_NOTE] := $EVENT_VELOCITY
+    $all_group_stat := 0
+    $pn := num_elements(%GROUPS_AFFECTED)
+    $pn := 0
+    while ($pn < $NUM_GROUPS)
+        if ($pn < $NUM_GROUPS)
+            if (search(%GROUPS_AFFECTED, $pn) >= 0)
+                group_stat[$pn] := get_event_par_arr($EVENT_ID, $EVENT_PAR_ALLOW_GROUP, $pn)
+                if (%group_stat[$pn] = 1)
+                    $all_group_stat := 1
+                    %group_counter[$pn] := %group_counter[$pn] + 1
+                    $all_group_counter := $all_group_counter + 1
+                end if
+            else
+                %group_stat[$pn] := 0
+            end if
+        end if
+        inc($pn)
+    end while
+    if ($all_group_counter > 0)
+        $all_group_stat := 1
+    end if
+end on
+
+on release
+	%velocity[$EVENT_NOTE] := 0
+end on
+
+on ui_control($clear_button)
+    $clear_button := 0
+    Clear
+    ResetBar
+end on
+

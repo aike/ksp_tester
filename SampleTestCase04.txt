@@ -1,0 +1,28 @@
+{ group roundrobin test sample }
+
+import "TestSender.txt"
+
+on init
+    TestSetup(0)
+
+    declare ui_button $Start
+	declare n
+end on
+
+on ui_control($Start)
+    $Start := 0
+
+    TestStart
+    TestGroupCounterReset()             { reset counter }
+    for n := 0 to 7                     { play note 8 times }
+        TestNoteOn(40, 100, 50)
+        TestNoteOff(40)
+    end for
+    AssertGroupCounter(0, EqualTo, 2)  { group 0 should be played 2 times }
+    AssertGroupCounter(1, EqualTo, 2)  { group 1 should be played 2 times }
+    AssertGroupCounter(2, EqualTo, 2)  { group 2 should be played 2 times }
+    AssertGroupCounter(3, EqualTo, 2)  { group 3 should be played 2 times }
+    TestEnd
+
+end on
+

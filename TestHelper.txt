@@ -1,0 +1,6 @@
+{ PGS utility function for target library }
+function TestSetPgs(index, value)
+    if (pgs_key_exists(TEST_PGS_KEY))
+        pgs_set_key_val(TEST_PGS_KEY, index, value)
+    end if
+end function

@@ -1,0 +1,26 @@
+
+    declare @TEST_FRAMEWORK_VERSION
+            @TEST_FRAMEWORK_VERSION := "1.0.0"
+
+    declare const $TEST_COMMAND_CC          := 118
+    declare const $TEST_PARAMETER_CC        := 119
+
+    declare const $TEST_START               := 1
+    declare const $TEST_END                 := 2
+    declare const $TEST_NO                  := 3
+    declare const $TEST_ASSERT_NOTE         := 4
+    declare const $TEST_ASSERT_VELOCITY     := 5
+    declare const $TEST_ASSERT_GROUP        := 6
+    declare const $TEST_ASSERT_ENGINE_PAR   := 7
+    declare const $TEST_ASSERT_PGS          := 8
+    declare const $TEST_ASSERT_GROUP_COUNTER:= 9
+    declare const $TEST_GROUP_COUNTER_RESET := 10
+
+    declare const $EqualTo                  := 0
+    declare const $NotEqualTo               := 1
+    declare const $LessThan                 := 2
+    declare const $GreaterThan              := 3
+    declare const $LessThanOrEqualTo        := 4
+    declare const $GreaterThanOrEqualTo     := 5
+
+    declare const $TEST_ALL_GROUPS          := 0x3FFF
