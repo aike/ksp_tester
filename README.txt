@@ -197,5 +197,5 @@ This is a helper function defined in "TestHelper.txt".
   Nil's KScript Editor (http://nilsliberg.se/ksp/)
 
 
-witten by Aike
+written by Aike
 Last changed: August 9, 2011
