@@ -1,0 +1,32 @@
+{ midi cc test sample }
+
+import "TestSender.txt"
+
+on init
+    TestSetup(0)
+    declare ui_button $Start
+end on
+
+on ui_control($Start)
+    TestStart()
+       
+    Test(1)
+    TestCC(7, 0)                                                    { send parameter 0 via midi cc 7            }
+	AssertEnginePar($ENGINE_PAR_VOLUME, -1, -1, -1, EqualTo, 0)     { volume should be changed to 0             }
+    TestCC(7, 64)                                                   { send parameter 64 via midi cc 7           }
+	AssertEnginePar($ENGINE_PAR_VOLUME, -1, -1, -1, EqualTo, 317184){ volume should be changed to middle value  }
+    TestCC(7, 127)                                                  { send parameter 127 via midi cc 7          }
+	AssertEnginePar($ENGINE_PAR_VOLUME, -1, -1, -1, EqualTo, 629412){ volume should be changed to max value     }
+
+    Test(2)
+    TestCC(10, 0)                                                   { send parameter 0 via midi cc 10       }
+	AssertEnginePar($ENGINE_PAR_PAN, -1, -1, -1, EqualTo, 0)        { pan should be changed to 0            }
+    TestCC(10, 64)                                                  { send parameter 0 via midi cc 10       }
+	AssertEnginePar($ENGINE_PAR_PAN, -1, -1, -1, EqualTo, 503936)   { pan should be changed to middle value }
+    TestCC(10, 127)                                                 { send parameter 0 via midi cc 10       }
+	AssertEnginePar($ENGINE_PAR_PAN, -1, -1, -1, EqualTo, 999998)   { pan should be changed to middle value }
+
+    TestEnd()
+    
+    $Start := 0
+end on

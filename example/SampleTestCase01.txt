@@ -1,0 +1,25 @@
+{ all note play sample }
+
+import "TestSender.txt"
+
+on init
+    TestSetup(0)                            { declare test variables }
+    declare ui_button $Start
+    declare n
+end on
+
+on ui_control($Start)
+
+    TestStart                               { initialize test            }
+    for n := 0 to 127
+        Test(n)                             { show test number           }
+        TestNoteOn($n, 100, 50)             { send note on signal        }
+        AssertNoteOn(n)                     { the note should be played  }
+        AssertGroupOn(0)                    { group 0 should be played   }
+        AssertVelocity(n, EqualTo, 100)     { the velocity should be 100 }
+        TestNoteOff(n)                      { send note off signal       }
+    end for
+    TestEnd                                 { show test result           }
+    
+    $Start := 0
+end on
