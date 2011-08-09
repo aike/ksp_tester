@@ -47,7 +47,7 @@ on init
     import "TestCommon.txt"
     
 	set_ui_height_px(270)
-	set_script_title("TestReceiver")
+	set_script_title("TestReceiver")
     set_skin_offset(5000)
 	make_perfview
 
@@ -56,20 +56,20 @@ on init
 	declare $ok
 	declare $ng
 	declare @s
-    declare $n
+    declare $n
     declare polyphonic $pn
 	declare %velocity[128]
 	declare %value[20]
 	declare $value_cnt
 	declare $value_max
     declare %group_stat[500]
-    declare %group_counter[500]
+    declare %group_counter[500]
     declare $all_group_stat
     declare $all_group_counter
     declare $v2
     declare $v3
     declare $time
-    declare $start_time
+    declare $start_time
 
     { Test Console }
 	declare ui_label $console (1, 2)
@@ -83,9 +83,9 @@ on init
     Button($clear_button, 425, 237, "Clear")
 
     { Logo }
-    PutText($text1, 450,  70, 17, "Soundfrost KSP Tester")
-    PutText($text2, 460,  90, 3,  "Version " & @TEST_FRAMEWORK_VERSION)
-    PutText($text3, 460, 107, 3,  "soundfrostmusic.com")
+    PutText($text1, 450,  70, 7, "Soundfrost KSP Tester")
+    PutText($text2, 460,  90, 6,  "Version " & @TEST_FRAMEWORK_VERSION)
+    PutText($text3, 460, 107, 6,  "soundfrostmusic.com")
     
     { Status Bar }
     declare ui_table %status_bar[2] (1,1,1)
@@ -95,10 +95,10 @@ on init
 	set_control_par(get_ui_id(%status_bar), $CONTROL_PAR_WIDTH, 200)
 	set_control_par(get_ui_id(%status_bar), $CONTROL_PAR_HEIGHT, 20)
     set_control_par(get_ui_id(%status_bar),$CONTROL_PAR_BAR_COLOR, 256)
-    ResetBar
-    
-    pgs_create_key(TEST_PGS_KEY, 100)
-    
+    ResetBar
+    
+    pgs_create_key(TEST_PGS_KEY, 100)
+    
     message("")
 end on
 
@@ -135,15 +135,15 @@ end function
 function MergeBytes3(b1, b2, b3)
     $v3 := b1 .or. sh_left(b2, 7) .or. sh_left(b3, 14)
 end function
-
-function ResetGroupCounter
+
+function ResetGroupCounter
     $n := 0
     while ($n < $NUM_GROUPS)
         %group_counter[$n] := 0
         inc($n)
     end while
     $all_group_counter := 0
-end function
+end function
 
 function DoAssertion(got, matcher, expected)
     declare flag
@@ -241,10 +241,10 @@ function do_command
 
 		case $TEST_ASSERT_GROUP
             MergeBytes2(%value[0], %value[1])
-            VPrint("  Assert Group (", $v2 & ", " & %value[2] & ", " & %value[3] & ")")
-            if (v2 = $TEST_ALL_GROUPS)
+            VPrint("  Assert Group (", $v2 & ", " & %value[2] & ", " & %value[3] & ")")
+            if (v2 = $TEST_ALL_GROUPS)
                 DoAssertion($all_group_stat, %value[2], %value[3])
-            else
+            else
                 DoAssertion(%group_stat[$v2], %value[2], %value[3])
             end if
  
@@ -256,9 +256,9 @@ function do_command
                 DoAssertion($all_group_counter, %value[2], $v3)
             else
                 DoAssertion(%group_counter[$v2], %value[2], $v3)
-            end if
-
-        case $TEST_GROUP_COUNTER_RESET
+            end if
+
+        case $TEST_GROUP_COUNTER_RESET
             VPrint("  Group Counter Reset", "")
             ResetGroupCounter
 
@@ -269,12 +269,12 @@ function do_command
             DoAssertion(get_engine_par($v2, %value[2]-1, %value[3]-1, %value[4]-1), %value[5], $v3)
 
         case $TEST_ASSERT_PGS
-            MergeBytes3(%value[0], %value[1], %value[2])
+            MergeBytes3(%value[0], %value[1], %value[2])
             $v2 := $v3
             MergeBytes3(%value[4], %value[5], %value[6])
             VPrint("  Assert Pgs (", $v2 & ", " & %value[3] & ", " & $v3 & ")")
             DoAssertion(pgs_get_key_val(TEST_PGS_KEY, $v2), %value[3], $v3)
-
+
 	end select
 
 end function
@@ -300,17 +300,17 @@ on controller
 end on
 
 on note
-	%velocity[$EVENT_NOTE] := $EVENT_VELOCITY
-    $all_group_stat := 0
+	%velocity[$EVENT_NOTE] := $EVENT_VELOCITY
+    $all_group_stat := 0
     $pn := num_elements(%GROUPS_AFFECTED)
     $pn := 0
     while ($pn < $NUM_GROUPS)
         if ($pn < $NUM_GROUPS)
-            if (search(%GROUPS_AFFECTED, $pn) >= 0)
-                group_stat[$pn] := get_event_par_arr($EVENT_ID, $EVENT_PAR_ALLOW_GROUP, $pn)
-                if (%group_stat[$pn] = 1)
-                    $all_group_stat := 1
-                    %group_counter[$pn] := %group_counter[$pn] + 1
+            if (search(%GROUPS_AFFECTED, $pn) >= 0)
+                group_stat[$pn] := get_event_par_arr($EVENT_ID, $EVENT_PAR_ALLOW_GROUP, $pn)
+                if (%group_stat[$pn] = 1)
+                    $all_group_stat := 1
+                    %group_counter[$pn] := %group_counter[$pn] + 1
                     $all_group_counter := $all_group_counter + 1
                 end if
             else
@@ -319,9 +319,9 @@ on note
         end if
         inc($pn)
     end while
-    if ($all_group_counter > 0)
-        $all_group_stat := 1
-    end if
+    if ($all_group_counter > 0)
+        $all_group_stat := 1
+    end if
 end on
 
 on release

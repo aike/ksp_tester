@@ -2,15 +2,16 @@
                              Soundfrost KSP Tester
 
 1. INTRODUCTION
-KSP Tester is a simple testing framework of KONTAKT scripting language KSP.
+KSP Tester is a simple testing framework for KONTAKT scripting language KSP.
 It provides repeatable testing environment for all KSP script developers.
 
 
 2. DOWNLOAD
-http://aike.github.com/ksp_tester
+http://github.com/aike/ksp_tester
 
 
 3. DEMO MOVIE
+http://www.youtube.com/watch?v=iFB9NiFxebk&fmt=22
 
 
 4. FEATURES
@@ -67,7 +68,7 @@ end on
 (1) Compile the test script by Nil's KScript Editor(http://nilsliberg.se/ksp/).
 (2) Paste the compiled script to KONTAKT multi script window.
 (3) Load target library and open its script editor.
-(4) Paste the compiled TestReceiver script to the rightmost tab of the script editor.
+(4) Paste the compiled TestReceiver script to the rightmost tab of the target library's script editor.
 (5) Click start button.
 
 
@@ -76,8 +77,8 @@ KSP Tester contains two script libraries TestSender and TestReceiver. TestSender
 is a KSP multi script function library. Its role is to provide testing functions 
 for your test script and to run it.
 TestSender executes test commands in accordance with your test script. It sends 
-note messages to target library via midi and sends assertion messages to TestReceiver.
-When assertion message received, TestReceiver checks status of target library and 
+note messages to target library via midi and sends test messages to TestReceiver.
+When test message received, TestReceiver checks status of target library and 
 shows its result on the console.
 
               TestSender           Target Library          TestReceiver
@@ -197,4 +198,4 @@ This is a helper function defined in "TestHelper.txt".
 
 
 witten by Aike
-Last changed: August 8, 2011
+Last changed: August 9, 2011
