@@ -1,5 +1,5 @@
-{ sample script to test your library's knob value }
-
+{ sample script to test your library's knob value }
+
 import "TestHelper.txt"
 
 on init

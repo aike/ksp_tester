@@ -1,0 +1,28 @@
+{ knob value test }
+
+import "TestSender.txt"
+
+on init
+    TestSetup(0)                      { declare test variables         }
+    declare ui_button $Start
+    declare n
+end on
+
+on ui_control($Start)
+
+    TestStart                         { initialize test                }
+
+    TestCC(50, 0)                     { send CC#50 to turn knob1 left  }
+    AssertPgs(1, EqualTo, 0)          { validate knob1 value           }
+    TestCC(50, 127)                   { send CC#50 to turn knob1 right }
+    AssertPgs(1, EqualTo, 100)        { validate knob1 value           }
+
+    TestCC(51, 0)                     { send CC#51 to turn knob2 left  }
+    AssertPgs(2, EqualTo, 0)          { validate knob2 value           }
+    TestCC(51, 127)                   { send CC#51 to turn knob2 right }
+    AssertPgs(2, EqualTo, 100)        { validate knob2 value           }
+
+    TestEnd                           { show test result               }
+
+    $Start := 0
+end on
